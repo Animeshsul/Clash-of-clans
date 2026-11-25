@@ -30,10 +30,10 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;
 </div>
 <section id="dashboard">
 <div class="stats">
-<div class="stat"><b id="sPlayers">0</b><span>Players</span></div><div class="stat"><b id="sAttacks">0</b><span>Attacks logged</span></div><div class="stat"><b id="sStars">0</b><span>Total stars</span></div><div class="stat"><b id="sAvg">0</b><span>Average score</span></div>
+<div class="stat"><b id="sPlayers">0</b><span>Players</span></div><div class="stat"><b id="sAttacks">0</b><span>Attacks logged</span></div><div class="stat"><b id="sStars">0</b><span>Total stars</span></div>
 </div>
-<div class="panel"><div class="row"><h2>🏆 Player leaderboard</h2><div class="actions"><button id="leaderPdfBtn">Export leaderboard PDF</button><span class="hint">Ranked by average attack score</span></div></div><div class="tablewrap"><table><thead><tr><th>Rank</th><th>Player</th><th>Attacks</th><th>Stars</th><th>3★ rate</th><th>Avg %</th><th>Avg score</th><th>Status</th></tr></thead><tbody id="leaderboard"></tbody></table></div></div>
-<div class="panel"><h2>Scoring guide</h2><div class="hint">Each attack is scored out of 100: Stars (50) + Destruction (30) + Execution (20). Stars: 3★=50, 2★=35, 1★=15, 0★=0. Destruction: 3 points per complete 10% (maximum 30). Execution is entered by the evaluator: 0, 5, 10, 15 or 20.</div></div>
+<div class="panel"><div class="row"><h2>🏆 Player leaderboard</h2><div class="actions"><button id="leaderPdfBtn">Export leaderboard PDF</button><span class="hint">Ranked by 3★ rate and average destruction</span></div></div><div class="tablewrap"><table><thead><tr><th>Rank</th><th>Player</th><th>Attacks</th><th>Stars</th><th>3★ rate</th><th>Avg %</th><th>Status</th></tr></thead><tbody id="leaderboard"></tbody></table></div></div>
+
 </section>
 <section id="players" class="hidden">
 <div class="panel"><h2>Add clan member</h2><form id="playerForm"><div class="grid"><div class="field"><label>Player name</label><input id="pName" required placeholder="In-game name"></div></div><button class="primary">Add player</button></form></div>
@@ -43,19 +43,19 @@ table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;
 <div class="panel"><h2>Record an attack</h2><form id="attackForm">
 <div class="grid">
 <div class="field"><label>Player</label><select id="aPlayer" required></select></div>
-<div class="field"><label>Friendly war number</label><select id="aWar"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
-<div class="field"><label>Attack number</label><select id="aNo"><option>1</option><option>2</option></select></div>
+<div class="field"><label>Friendly war number</label><input id="aWar" type="number" min="1" max="1000" step="1" required value="1" placeholder="e.g. 6"></div>
+<div class="field"><label>Attack number</label><input id="aNo" type="number" min="1" max="100" step="1" required value="1" placeholder="e.g. 3"></div>
 
 <div class="field"><label>Target difficulty</label><select id="aDiff"><option>Medium</option><option>Easy</option><option>Hard</option><option>Very Hard</option></select></div>
-<div class="field"><label>Stars</label><select id="aStars"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+<div class="field"><label>Stars</label><input id="aStars" type="number" min="0" max="3" step="1" required value="0" placeholder="0–3"></div>
 <div class="field"><label>Destruction %</label><input id="aPercent" type="number" min="0" max="100" required placeholder="e.g. 87"></div>
-<div class="field"><label>Execution score</label><select id="aExec"><option value="20">20 · Excellent</option><option value="15">15 · Good</option><option value="10">10 · Average</option><option value="5">5 · Poor</option><option value="0">0 · Failed</option></select></div>
+
 <div class="field"><label>Attack strategy</label><input id="aStrategy" placeholder="e.g. Root Riders"></div>
 </div>
 <div class="field"><label>Notes / mistakes / positives</label><textarea id="aNotes" placeholder="Funnel issue, spell timing, clean attack..."></textarea></div>
-<button class="primary">Save attack record</button><p class="hint">For a missed attack, record 0 stars, 0%, and 0 execution so reliability is reflected.</p>
+<button class="primary">Save attack record</button><p class="hint">For a missed attack, record 0 stars and 0% so reliability is reflected.</p>
 </form></div>
-<div class="panel"><div class="row"><h2>Attack history</h2><div class="actions"><button id="exportBtn">Export CSV</button><button id="attackPdfBtn">Export attack log PDF</button><button id="fullPdfBtn">Full report PDF</button></div></div><div class="tablewrap"><table><thead><tr><th>Player</th><th>War</th><th>Attack</th><th>Stars</th><th>Destruction</th><th>Strategy</th><th>Score</th><th>Notes</th><th></th></tr></thead><tbody id="attackTable"></tbody></table></div></div>
+<div class="panel"><div class="row"><h2>Attack history</h2><div class="actions"><button id="exportBtn">Export CSV</button><button id="attackPdfBtn">Export attack log PDF</button><button id="fullPdfBtn">Full report PDF</button></div></div><div class="tablewrap"><table><thead><tr><th>Player</th><th>War</th><th>Attack</th><th>Stars</th><th>Destruction</th><th>Strategy</th><th>Notes</th><th></th></tr></thead><tbody id="attackTable"></tbody></table></div></div>
 </section>
 <p class="hint">Data is saved in this browser on this device. Use Export CSV regularly as a backup. This starter website does not connect directly to Supercell or sync between clan leaders.</p>
 </main>
@@ -64,23 +64,22 @@ const KEY='clanTrialHQ_v1';
 let data=JSON.parse(localStorage.getItem(KEY)||'{"players":[],"attacks":[]}');
 const $=id=>document.getElementById(id);
 function save(){localStorage.setItem(KEY,JSON.stringify(data));render()}
-function score(stars,pct,exec){return ({0:0,1:15,2:35,3:50}[stars]||0)+Math.min(30,Math.floor(pct/10)*3)+exec}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function stats(){return data.players.map(p=>{let a=data.attacks.filter(x=>x.player===p.name),n=a.length,stars=a.reduce((v,x)=>v+x.stars,0),triples=a.filter(x=>x.stars===3).length;return {...p,n,stars,triples,rate:n?triples/n:0,avgPct:n?a.reduce((v,x)=>v+x.percent,0)/n:0,avg:n?a.reduce((v,x)=>v+x.score,0)/n:0}}).sort((a,b)=>b.avg-a.avg||b.rate-a.rate||b.avgPct-a.avgPct)}
+function stats(){return data.players.map(p=>{let a=data.attacks.filter(x=>x.player===p.name),n=a.length,stars=a.reduce((v,x)=>v+x.stars,0),triples=a.filter(x=>x.stars===3).length;return {...p,n,stars,triples,rate:n?triples/n:0,avgPct:n?a.reduce((v,x)=>v+x.percent,0)/n:0}}).sort((a,b)=>b.rate-a.rate||b.avgPct-a.avgPct)}
 function render(){
-$('sPlayers').textContent=data.players.length;$('sAttacks').textContent=data.attacks.length;$('sStars').textContent=data.attacks.reduce((v,x)=>v+x.stars,0);$('sAvg').textContent=data.attacks.length?(data.attacks.reduce((v,x)=>v+x.score,0)/data.attacks.length).toFixed(1):'0';
-let ranked=stats();$('leaderboard').innerHTML=ranked.length?ranked.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.n}</td><td>${p.stars}</td><td>${(p.rate*100).toFixed(0)}%</td><td>${p.avgPct.toFixed(1)}%</td><td><b>${p.avg.toFixed(1)}</b></td><td>${i<15?'CWL priority':i<20?'Reserve':'Practice'}</td></tr>`).join(''):'<tr><td colspan="9" class="empty">Add players to start your leaderboard.</td></tr>';
+$('sPlayers').textContent=data.players.length;$('sAttacks').textContent=data.attacks.length;$('sStars').textContent=data.attacks.reduce((v,x)=>v+x.stars,0);
+let ranked=stats();$('leaderboard').innerHTML=ranked.length?ranked.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.n}</td><td>${p.stars}</td><td>${(p.rate*100).toFixed(0)}%</td><td>${p.avgPct.toFixed(1)}%</td><td>${i<15?'CWL priority':i<20?'Reserve':'Practice'}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">Add players to start your leaderboard.</td></tr>';
 $('playersTable').innerHTML=data.players.length?data.players.map((p,i)=>`<tr><td>${esc(p.name)}</td><td><button class="danger" onclick="removePlayer(${i})">Remove</button></td></tr>`).join(''):'<tr><td colspan="3" class="empty">No players added yet.</td></tr>';
 $('aPlayer').innerHTML='<option value="">Choose player</option>'+data.players.map(p=>`<option>${esc(p.name)}</option>`).join('');
-$('attackTable').innerHTML=data.attacks.length?[...data.attacks].reverse().map(a=>`<tr><td>${esc(a.player)}</td><td>${a.war}</td><td>${a.no}</td><td>${a.stars}★</td><td>${a.percent}%</td><td>${esc(a.strategy||'—')}</td><td><b>${a.score}</b></td><td>${esc(a.notes||'')}</td><td><button class="danger" onclick="removeAttack('${a.id}')">×</button></td></tr>`).join(''):'<tr><td colspan="10" class="empty">No attacks recorded yet.</td></tr>';
+$('attackTable').innerHTML=data.attacks.length?[...data.attacks].reverse().map(a=>`<tr><td>${esc(a.player)}</td><td>${a.war}</td><td>${a.no}</td><td>${a.stars}★</td><td>${a.percent}%</td><td>${esc(a.strategy||'—')}</td><td>${esc(a.notes||'')}</td><td><button class="danger" onclick="removeAttack('${a.id}')">×</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">No attacks recorded yet.</td></tr>';
 }
 function removePlayer(i){let name=data.players[i].name;if(!confirm(`Remove ${name} and their attack records?`))return;data.players.splice(i,1);data.attacks=data.attacks.filter(a=>a.player!==name);save()}
 function removeAttack(id){data.attacks=data.attacks.filter(a=>a.id!==id);save()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['dashboard','players','attacks'].forEach(t=>$(t).classList.toggle('hidden',t!==b.dataset.tab));});
 $('playerForm').onsubmit=e=>{e.preventDefault();let name=$('pName').value.trim();if(data.players.some(p=>p.name.toLowerCase()===name.toLowerCase()))return alert('Player already exists.');data.players.push({name});e.target.reset();save()};
-$('attackForm').onsubmit=e=>{e.preventDefault();let player=$('aPlayer').value,pct=Number($('aPercent').value);if(!player)return alert('Add/select a player first.');if(pct<0||pct>100)return alert('Destruction must be 0–100.');let stars=Number($('aStars').value),exec=Number($('aExec').value);data.attacks.push({id:Date.now().toString(),player,war:$('aWar').value,no:$('aNo').value,diff:$('aDiff').value,stars,percent:pct,exec,strategy:$('aStrategy').value,notes:$('aNotes').value,score:score(stars,pct,exec)});e.target.reset();save()};
+$('attackForm').onsubmit=e=>{e.preventDefault();let player=$('aPlayer').value,pct=Number($('aPercent').value);if(!player)return alert('Add/select a player first.');if(pct<0||pct>100)return alert('Destruction must be 0–100.');let warNo=Number($('aWar').value),attackNo=Number($('aNo').value),stars=Number($('aStars').value);if(!Number.isInteger(warNo)||warNo<1||warNo>1000)return alert('Friendly war number must be a whole number from 1 to 1000.');if(!Number.isInteger(attackNo)||attackNo<1||attackNo>100)return alert('Attack number must be a whole number from 1 to 100.');if(!Number.isInteger(stars)||stars<0||stars>3)return alert('Stars must be a whole number from 0 to 3.');data.attacks.push({id:Date.now().toString(),player,war:warNo,no:attackNo,diff:$('aDiff').value,stars,percent:pct,strategy:$('aStrategy').value,notes:$('aNotes').value});e.target.reset();save()};
 $('clearPlayers').onclick=()=>{if(confirm('Delete all players and all attack records?')){data={players:[],attacks:[]};save()}};
-$('exportBtn').onclick=()=>{let rows=[['Player','War','Attack','Difficulty','Stars','Destruction %','Execution','Strategy','Score','Notes'],...data.attacks.map(a=>[a.player,a.war,a.no,a.diff,a.stars,a.percent,a.exec,a.strategy,a.score,a.notes])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');let blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clan-trial-attacks.csv';a.click();URL.revokeObjectURL(url)};
+$('exportBtn').onclick=()=>{let rows=[['Player','War','Attack','Difficulty','Stars','Destruction %','Strategy','Notes'],...data.attacks.map(a=>[a.player,a.war,a.no,a.diff,a.stars,a.percent,a.strategy,a.notes])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');let blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='clan-trial-attacks.csv';a.click();URL.revokeObjectURL(url)};
 
 function printReport(title, bodyHtml){
   const win=window.open('','_blank');
@@ -103,17 +102,17 @@ function printReport(title, bodyHtml){
 }
 function leaderboardReport(){
   const ranked=stats();
-  const rows=ranked.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.n}</td><td>${p.stars}</td><td>${(p.rate*100).toFixed(0)}%</td><td>${p.avgPct.toFixed(1)}%</td><td>${p.avg.toFixed(1)}</td><td>${i<15?'CWL Priority':i<20?'Reserve':'Practice'}</td></tr>`).join('');
-  return `<h2>Player leaderboard</h2><table><thead><tr><th>Rank</th><th>Player</th><th>Attacks</th><th>Stars</th><th>3★ rate</th><th>Avg destruction</th><th>Avg score</th><th>Status</th></tr></thead><tbody>${rows||'<tr><td colspan="9">No players recorded</td></tr>'}</tbody></table>`;
+  const rows=ranked.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}</td><td>${p.n}</td><td>${p.stars}</td><td>${(p.rate*100).toFixed(0)}%</td><td>${p.avgPct.toFixed(1)}%</td><td>${i<15?'CWL Priority':i<20?'Reserve':'Practice'}</td></tr>`).join('');
+  return `<h2>Player leaderboard</h2><table><thead><tr><th>Rank</th><th>Player</th><th>Attacks</th><th>Stars</th><th>3★ rate</th><th>Avg destruction</th><th>Status</th></tr></thead><tbody>${rows||'<tr><td colspan="7">No players recorded</td></tr>'}</tbody></table>`;
 }
 function attackReport(){
-  const rows=data.attacks.map(a=>`<tr><td>${esc(a.player)}</td><td>${a.war}</td><td>${a.no}</td><td>${esc(a.diff||'')}</td><td>${a.stars}★</td><td>${a.percent}%</td><td>${a.exec}</td><td>${esc(a.strategy||'—')}</td><td>${a.score}</td><td>${esc(a.notes||'')}</td></tr>`).join('');
-  return `<h2>Attack log</h2><table><thead><tr><th>Player</th><th>War</th><th>Attack</th><th>Difficulty</th><th>Stars</th><th>Destruction</th><th>Execution</th><th>Strategy</th><th>Score</th><th>Notes</th></tr></thead><tbody>${rows||'<tr><td colspan="11">No attacks recorded</td></tr>'}</tbody></table>`;
+  const rows=data.attacks.map(a=>`<tr><td>${esc(a.player)}</td><td>${a.war}</td><td>${a.no}</td><td>${esc(a.diff||'')}</td><td>${a.stars}★</td><td>${a.percent}%</td><td>${esc(a.strategy||'—')}</td><td>${esc(a.notes||'')}</td></tr>`).join('');
+  return `<h2>Attack log</h2><table><thead><tr><th>Player</th><th>War</th><th>Attack</th><th>Difficulty</th><th>Stars</th><th>Destruction</th><th>Strategy</th><th>Notes</th></tr></thead><tbody>${rows||'<tr><td colspan="8">No attacks recorded</td></tr>'}</tbody></table>`;
 }
 $('leaderPdfBtn').onclick=()=>printReport('Clan Trial HQ — Player Leaderboard',leaderboardReport());
 $('attackPdfBtn').onclick=()=>printReport('Clan Trial HQ — Attack Log',attackReport());
 $('fullPdfBtn').onclick=()=>printReport('Clan Trial HQ — Full Performance Report',
-  `<div class="cards"><div class="card"><b>${data.players.length}</b><br>Players</div><div class="card"><b>${data.attacks.length}</b><br>Attacks logged</div><div class="card"><b>${data.attacks.reduce((v,x)=>v+x.stars,0)}</b><br>Total stars</div><div class="card"><b>${data.attacks.length?(data.attacks.reduce((v,x)=>v+x.score,0)/data.attacks.length).toFixed(1):'0'}</b><br>Average score</div></div>`+leaderboardReport()+attackReport());
+  `<div class="cards"><div class="card"><b>${data.players.length}</b><br>Players</div><div class="card"><b>${data.attacks.length}</b><br>Attacks logged</div><div class="card"><b>${data.attacks.reduce((v,x)=>v+x.stars,0)}</b><br>Total stars</div></div>`+leaderboardReport()+attackReport());
 
 render();
 </script></body></html>
